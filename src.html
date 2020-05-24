@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<script>
+const stopStartText = ["Start", "Stop"]
+const startTextIndex = 0
+const stopTextIndex = 1
+const classes = ["grid-item set-green", "grid-item set-red"]
+const delay = 1000
+
+const rows = 30
+const cols = 65  //need to change css as well #grid 
+let intervalHandle
+var clearId = null 
+var count = 0
+var promiseService
+var counterId = null
+var gridId = null
+const emptyGrid = Array(rows).fill().map(() => Array(cols).fill(0))
+var startStopId = null
+
+                    
+const nextActionsForStartPress = () =>
+       currentActions = startDisplayedActions 
+       
+const nextActionsForStopPress = () =>
+       currentActions = stopDisplayedActions 
+       
+let currentActions = null
+
+const executeActions = () => {
+    Object.keys(currentActions).forEach(function(k, i) {
+          currentActions[k]()} )
+}
+   
+
+const setStopStartStop = () => {
+      startStopId.innerText = stopStartText[stopTextIndex]
+      startStopId.className = "set-red"
+}
+const setStopStartStart = () => {
+      startStopId.innerText  = stopStartText[startTextIndex]
+      startStopId.className = "set-green"
+}
+const startIterations = () => {
+      game()
+}
+const stopIterations = () => {
+      clearInterval(intervalHandle)
+}
+const setCountZero = () => {
+      clearCount()
+    }
+const hideClearButton = () => {
+      clearId.style.display ="none"
+    }
+const showClearButton = () => {
+      clearId.style.display ="inline"
+}
+const addGridHandler = () => {
+     gridId.addEventListener('click', gridHandler, false);
+}
+const removeGridHandler = () => {
+      gridId.removeEventListener('click', gridHandler, false);
+}
+  
+//initActions on runs once on program loading
+//The other action lists run alternatively
+//Tooken xstate out.
+const initActions = { setStopStartStart,
+                      addGridHandler,
+                      nextActionsForStartPress }
+        
+const startDisplayedActions = {hideClearButton,
+                               setCountZero,
+                               setStopStartStop,
+                               startIterations,
+                               removeGridHandler,
+                               nextActionsForStopPress }
+                    
+const stopDisplayedActions = {stopIterations,
+                              showClearButton,
+                              setStopStartStart,
+                              addGridHandler,
+                              nextActionsForStartPress }
+
+
+
+const game = () => {
+  grid = readContents()
+  intervalHandle = setInterval(() => {
+    grid = life(grid)
+    writeContents(grid)
+    incCount(1)
+  }, delay)
+}
+
+
+const setRed = (element, aString) => {
+  element.innerHTML = aString
+  element.className = "grid-item set-red"
+  return element
+}
+
+const setGreen = (element, aString) => {
+  element.innerHTML = aString
+  element.className = "grid-item set-green"
+  return element
+}
+
+const gridHandler = (e) => {
+  e.target = (e.target.innerHTML === "0") ? setRed(e.target,"1") : setGreen(e.target,"0")
+  readContents()
+}
+
+const sendStopStart = () => {
+  //promiseService.send('STOPSTARTPRESS')
+  executeActions()
+}
+
+
+clearHandler = () => {
+  clearCount()
+  writeContents(emptyGrid)
+}
+
+const readContents = () => {
+  var containerDiv = document.getElementById("grid");
+  var items = [].slice.call(containerDiv.children)
+  var contents = []
+  var index = 0
+  for (i = 0; i < rows; i++) {
+    var row = []
+    for (j = 0; j < cols; j++) {
+      row.push(parseInt(items[index].innerHTML))
+      index = index + 1
+    }
+    //{value: items[j].innerHTML,
+    //              x: items[j].attributes.getNamedItem("data-x").value,
+    //              y: items[j].attributes.getNamedItem("data-y").value,	       
+    //  }) 
+    contents.push(row)
+  }
+  return contents
+}
+
+const writeContents = (contents) => {
+  var containerDiv = document.getElementById("grid");
+  index = 0
+  contents.map((aRow) => aRow.map((aCol) => {
+    containerDiv.children[index].innerHTML = aCol.toString()
+    containerDiv.children[index].className = (aCol === 0) ? "grid-item set-green" : "grid-item set-red"
+    index = index + 1
+  }))
+
+}
+
+const boxLayOut = (rows, cols) => {
+  var theRet = []
+  var index = 0 //for key
+  for (let i = 0; i < rows; i++) {
+    for (let j = 0; j < cols; j++) {
+      theRet.push(
+        `<div class="grid-item set-green" data-x=${i} data-y=${j} data-index=${index}>0</div>`
+      )
+      index = index + 1
+    }
+  }
+  return theRet.join(" ")
+}
+
+const incCount = (value) => {
+  count = count + value
+  counterId.value = count.toString()
+}
+
+const clearCount = () => {
+  count = 0
+  counterId.value = count.toString()
+}
+
+window.onload = function() {
+ 
+  clearId = document.getElementById("clearButton")
+  counterId = document.getElementById("counter")
+  gridId = document.getElementById("grid");
+  startStopId = document.getElementById("startButton");
+ 
+  clearId.addEventListener('click', clearHandler, false);
+  startStopId.addEventListener('click', sendStopStart, false);
+  
+  gridId.insertAdjacentHTML("beforeend", boxLayOut(rows, cols));
+
+  currentActions = initActions
+  executeActions()
+}
+
+
+
+
+
+
+//Life code 
+
+const sumValueOfSurroundingCells = (theCellRow, theCellCol, dataGrid) => {
+     
+        const rows = dataGrid.length
+        const cols = dataGrid[0].length
+        const offset = [[-1,-1],[-1,0],[-1,1],      //row above cell
+                        [ 0,-1],[ 0,1],             //same row as cell. Removed [0,0]
+                        [ 1,-1],[ 1,0],[ 1,1] ]     //row below cell
+ 
+        return offset.reduce((accum, valueFromOffset) => {
+            //alert(valueFromOffset)
+            const [row, col] = valueFromOffset
+            const newRow = row+theCellRow
+            const newCol = col+theCellCol
+            //Need to check that we are not accessing values outside our grid
+            if (newRow < 0 || newCol < 0 || newRow >= rows || newCol >= cols) {
+               return accum 
+            } else {
+               return accum + dataGrid[row+theCellRow][col+theCellCol]
+            }
+          },0)
+          
+}
+
+const processCellsInRow = (aRow, rowNum, theGrid) => {  
+  return aRow.map((aCell, colNum) => 
+	{
+          const livingCellsAround = sumValueOfSurroundingCells(rowNum, colNum, theGrid)
+          if (aCell === 0) {
+             //Cell is dead. If it has three living cells around it then
+             //bring it back to life
+             return  (livingCellsAround === 3) ? 1 : 0
+          }
+          else {
+            //Cell is alive. It dies if living cells around it is
+            //less than 2 or more than 3
+             return (livingCellsAround < 2 || livingCellsAround > 3) ? 0 : 1
+          }
+       })    //map end
+    }
+    
+
+const life = (gridFull) => {		
+    //Iterate old grid gridFull values to build newGrid
+    //console.log(gridFull)
+    let newGrid = gridFull.map((aRow, rowNum, theGrid) => processCellsInRow(aRow, rowNum, theGrid))
+    //console.log(newGrid)
+    return newGrid
+  }
+
+
+
+
+
+
+</script>
+<title></title>
+<style>
+
+
+#startButton {
+  margin-left: 10px;
+  font-size: 20px;
+}
+
+#counter {
+  margin-left: 10px;
+  font-size: 20px;
+}
+
+#clearButton {
+  margin-left: 10px;
+  font-size: 20px;
+}
+.centrelock {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+#grid {
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: repeat(65, 20px);
+ }
+
+.grid-item {
+   
+      border: 1px solid rgba(0, 0, 0, 0.8);
+      font-size: 1px;
+      height: 20px;
+}
+
+.set-red {
+   background-color: red;
+}
+
+.set-green {
+   background-color: green;
+}
+
+</style>
+
+</head>
+<body>        
+     <div>
+	  <h1>Conway's Game of Life</h1>
+	  <button id="startButton">Will be replaced</button>
+	  <input id="counter"/> 
+	  <button id="clearButton">Clear</button>
+     </div>
+     <div id="grid"></div>
+</body>
+</html>
