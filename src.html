@@ -3,15 +3,17 @@
 <head>
 <meta charset="utf-8">
 <script>
+//The cells contain 0 or 1 but the font is so small it effectively 
+//renders them invisible
 const stopStartText = ["Start", "Stop"]
 const startTextIndex = 0
 const stopTextIndex = 1
 const classes = ["grid-item set-green", "grid-item set-red"]
-const delay = 1000
+const delay = 750
 
 const rows = 30
-const cols = 65  //need to change css as well #grid 
-let intervalHandle
+const cols = 30  //need to change css as well #grid 
+var intervalHandle = null
 var clearId = null 
 var count = 0
 var promiseService
@@ -20,6 +22,15 @@ var gridId = null
 const emptyGrid = Array(rows).fill().map(() => Array(cols).fill(0))
 var startStopId = null
 
+const incCount = (value) => {
+  count = count + value
+  counterId.value = count.toString()
+}
+
+const clearCount = () => {
+  count = 0
+  counterId.value = count.toString()
+}
                     
 const nextActionsForStartPress = () =>
        currentActions = startDisplayedActions 
@@ -28,12 +39,6 @@ const nextActionsForStopPress = () =>
        currentActions = stopDisplayedActions 
        
 let currentActions = null
-
-const executeActions = () => {
-    Object.keys(currentActions).forEach(function(k, i) {
-          currentActions[k]()} )
-}
-   
 
 const setStopStartStop = () => {
       startStopId.innerText = stopStartText[stopTextIndex]
@@ -49,40 +54,38 @@ const startIterations = () => {
 const stopIterations = () => {
       clearInterval(intervalHandle)
 }
-const setCountZero = () => {
-      clearCount()
-    }
+
 const hideClearButton = () => {
       clearId.style.display ="none"
     }
 const showClearButton = () => {
       clearId.style.display ="inline"
 }
-const addGridHandler = () => {
-     gridId.addEventListener('click', gridHandler, false);
+const addGridClickHandler = () => {
+     gridId.addEventListener('click', gridClickHandler, false);
 }
-const removeGridHandler = () => {
-      gridId.removeEventListener('click', gridHandler, false);
+const removeGridClickHandler = () => {
+      gridId.removeEventListener('click', gridClickHandler, false);
 }
   
 //initActions on runs once on program loading
 //The other action lists run alternatively
 //Tooken xstate out.
 const initActions = { setStopStartStart,
-                      addGridHandler,
+                      addGridClickHandler,
                       nextActionsForStartPress }
         
 const startDisplayedActions = {hideClearButton,
-                               setCountZero,
+                               clearCount,
                                setStopStartStop,
                                startIterations,
-                               removeGridHandler,
+                               removeGridClickHandler,
                                nextActionsForStopPress }
                     
 const stopDisplayedActions = {stopIterations,
                               showClearButton,
                               setStopStartStart,
-                              addGridHandler,
+                              addGridClickHandler,
                               nextActionsForStartPress }
 
 
@@ -100,22 +103,25 @@ const game = () => {
 const setRed = (element, aString) => {
   element.innerHTML = aString
   element.className = "grid-item set-red"
-  return element
 }
 
 const setGreen = (element, aString) => {
   element.innerHTML = aString
   element.className = "grid-item set-green"
-  return element
+
 }
 
-const gridHandler = (e) => {
-  e.target = (e.target.innerHTML === "0") ? setRed(e.target,"1") : setGreen(e.target,"0")
+const gridClickHandler = (e) => {
+  (e.target.innerHTML === "0") ? setRed(e.target,"1") : setGreen(e.target,"0")
   readContents()
 }
 
+const executeActions = () => {
+  Object.keys(currentActions).forEach(function(k, i) {
+          currentActions[k]()} ) 
+}
+
 const sendStopStart = () => {
-  //promiseService.send('STOPSTARTPRESS')
   executeActions()
 }
 
@@ -127,25 +133,27 @@ clearHandler = () => {
 
 const readContents = () => {
   var containerDiv = document.getElementById("grid");
-  var items = [].slice.call(containerDiv.children)
+  var items = Array.from(containerDiv.children) 
+  // older version of the above [].slice.call(containerDiv.children)
   var contents = []
   var index = 0
-  for (i = 0; i < rows; i++) {
+  for (let i = 0; i < rows; i++) {
     var row = []
-    for (j = 0; j < cols; j++) {
+    for (let j = 0; j < cols; j++) {
       row.push(parseInt(items[index].innerHTML))
       index = index + 1
     }
-    //{value: items[j].innerHTML,
-    //              x: items[j].attributes.getNamedItem("data-x").value,
-    //              y: items[j].attributes.getNamedItem("data-y").value,	       
-    //  }) 
     contents.push(row)
   }
+  //So we start with large array and return  
+  //  [ [first row's cols], [second row's cols], .... ]
   return contents
 }
 
 const writeContents = (contents) => {
+  //So we start with 
+  //  [ [first row's cols], [second row's cols], .... ]
+  //and update a large flat array
   var containerDiv = document.getElementById("grid");
   index = 0
   contents.map((aRow) => aRow.map((aCol) => {
@@ -162,7 +170,7 @@ const boxLayOut = (rows, cols) => {
   for (let i = 0; i < rows; i++) {
     for (let j = 0; j < cols; j++) {
       theRet.push(
-        `<div class="grid-item set-green" data-x=${i} data-y=${j} data-index=${index}>0</div>`
+        `<div class="grid-item set-green">0</div>`
       )
       index = index + 1
     }
@@ -170,15 +178,7 @@ const boxLayOut = (rows, cols) => {
   return theRet.join(" ")
 }
 
-const incCount = (value) => {
-  count = count + value
-  counterId.value = count.toString()
-}
 
-const clearCount = () => {
-  count = 0
-  counterId.value = count.toString()
-}
 
 window.onload = function() {
  
@@ -284,7 +284,7 @@ const life = (gridFull) => {
 #grid {
         margin-top: 10px;
         display: grid;
-        grid-template-columns: repeat(65, 20px);
+        grid-template-columns: repeat(30, 20px);
  }
 
 .grid-item {
