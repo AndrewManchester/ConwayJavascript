@@ -112,8 +112,12 @@ const setGreen = (element, aString) => {
 }
 
 const gridClickHandler = (e) => {
-  (e.target.innerHTML === "0") ? setRed(e.target,"1") : setGreen(e.target,"0")
-  readContents()
+  //Placing mouse in cell. Click and hold mouse down and try drag cell
+  //results in the grid collapsing. This if statement is to fix this problem
+  if (e.target.innerHTML.length === 1) {
+    (e.target.innerHTML === "0") ? setRed(e.target,"1") : setGreen(e.target,"0");
+    readContents();
+  }  
 }
 
 const executeActions = () => {
